@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Github Pull Request Link Format
-// @version      0.1
+// @version      0.2
 // @description  Add convenient button to create a markdown link for a pull request
 // @author       jwhtlw
 // @match        https://github.com/*
