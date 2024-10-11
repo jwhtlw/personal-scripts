@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Github Pull Request Link Format
-// @version      0.2
+// @version      0.3
 // @description  Add convenient button to create a markdown link for a pull request
 // @author       jwhtlw
 // @match        https://github.com/*
@@ -10,12 +10,68 @@
 // @updateURL    https://github.com/jwhtlw/personal-scripts/raw/refs/heads/main/violentmonkey/github_pr_link_formatter.user.js
 // ==/UserScript==
 
-(function () {
-  "use strict";
+onUrlChange();
 
-  // get around GitHub being an SPA by listening for URL changes, and executing script on matching URL
-  GM_addUrlChangeListener((event) => {
-    split_path = location.pathname.split("/");
-    console.log(split_path);
+if (self.navigation) {
+  navigation.addEventListener("navigatesuccess", onUrlChange);
+} else {
+  let u = location.href;
+  new MutationObserver(
+    () => u !== (u = location.href) && onUrlChange(),
+  ).observe(document, { subtree: true, childList: true });
+}
+
+function getPrTitle() {
+  const elements = document.getElementsByClassName("js-issue-title");
+  const title_container = elements[0];
+  return title_container.innerHTML;
+}
+
+function markdown_format_link(text, link) {
+  return `[${text}](${link})`;
+}
+
+function copy_text_to_clipboard(text) {
+  navigator.clipboard.writeText(text);
+}
+
+function add_copy_markdown_link_button(markdown_link) {
+  const new_button_id = "vm_gh_pr_link_format";
+  // remove button from browser cache
+  const old_button = document.getElementById(new_button_id);
+  if (old_button !== null) {
+    old_button.remove();
+  }
+  // get current edit button
+  const button_class_str =
+    "js-details-target js-title-edit-button flex-md-order-2 Button--secondary Button--small Button m-0 mr-md-0";
+  const edit_button = document.getElementsByClassName(button_class_str)[0];
+  // copy button to mimick structure
+  let new_button = edit_button.cloneNode((deep = true));
+  // prevent id collisions by setting node id
+  new_button.id = new_button_id;
+  // change button title
+  new_button.children[0].innerText = "CopyMarkdownLink";
+  // set onclick behavior, overwrite previous class to prevent edit behavior
+  new_button.className =
+    "flex-md-order-2 Button--secondary Button--small Button m-0 mr-md-0";
+  new_button.addEventListener("click", () => {
+    copy_text_to_clipboard(markdown_link);
   });
-})();
+  // put new button before edit button in DOM
+  edit_button.parentNode.insertBefore(new_button, edit_button);
+}
+
+async function onUrlChange() {
+  split_pathname = location.pathname.substring(1).split("/");
+  if (split_pathname.length !== 4 || split_pathname[2] !== "pull") {
+    // do nothing if url is not a match
+    return;
+  }
+
+  await new Promise((r) => setTimeout(r, 500));
+  var pr_title = getPrTitle();
+  var markdown_link = markdown_format_link(pr_title, location.href);
+  add_copy_markdown_link_button(markdown_link);
+  console.log("'CopyMarkdownLink' button injected successfully!");
+}
