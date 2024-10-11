@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Github Pull Request Link Format
-// @version      0.3
+// @version      0.4
 // @description  Add convenient button to create a markdown link for a pull request
 // @author       jwhtlw
 // @match        https://github.com/*
@@ -55,8 +55,12 @@ function add_copy_markdown_link_button(markdown_link) {
   // set onclick behavior, overwrite previous class to prevent edit behavior
   new_button.className =
     "flex-md-order-2 Button--secondary Button--small Button m-0 mr-md-0";
-  new_button.addEventListener("click", () => {
+  new_button.addEventListener("click", async () => {
     copy_text_to_clipboard(markdown_link);
+    const button_text = new_button.children[0].innerText;
+    new_button.children[0].innerText = "Copied!";
+    await new Promise((r) => setTimeout(r, 1000));
+    new_button.children[0].innerText = button_text;
   });
   // put new button before edit button in DOM
   edit_button.parentNode.insertBefore(new_button, edit_button);
